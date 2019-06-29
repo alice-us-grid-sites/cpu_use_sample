@@ -31,7 +31,7 @@ CATKEYS = ['R.0','R.25','R.50','R.75','S.0','S.25','S.50','S.75','D.0','D.25','D
 DATAKEYS=['count','pcpu','pmem']
 AVALS=[75.0,50.0,25.0,0.0]
 UNAME='rjporter'
-PNAME='root'
+PNAMES='aliroot:root.exe'
 
 #----------------------------------------
 
@@ -41,7 +41,7 @@ class my_app:
     def __init__(self, args):
         self.args = args
         self.username = args.username
-        self.procname = args.procname
+        self.procnames = args.procnames
         self.nfinal = args.nfinal
         self.nloop = 0
         self.catkeys = CATKEYS
@@ -97,17 +97,31 @@ class my_app:
         if total_njobs > 0.0:
             aeff = total_aeff/total_njobs
         nl=[int(self.data_dict[k]['count']) for k in self.catkeys]
-        self.proc_c.log("%d %.2f %.2f %d %d %d %d %d %d %d %d %d %d %d %d" % (self.nloop,usercpu,aeff, nl[0],nl[1],nl[2],nl[3],nl[4],nl[5],nl[6],nl[7],nl[8],nl[9],nl[10],nl[11]), 0)
+        self.proc_c.log("%d %.2f %.2f R=%d S=%d D=%d " % (self.nloop,usercpu,aeff, nl[0]+nl[1]+nl[2]+nl[3],nl[4]+nl[5]+nl[6]+nl[7],nl[8]+nl[9]+nl[10]+nl[11]), 0)
         self.zerodata()
 #
 #        self.proc_c.log("%d %.2f %d %d %d %d %d %d %d %d %d %d %d %d " % (self.nloop,usercpu,[self.data_dict[k]['count'] for k in self.catkeys]), 0)
 
 
+    def check_element(self, ary):
+        retVal = False
+        if self.username not in ary[1]:
+            return retVal
+        lnames=self.procnames.split(":")
+        for name in lnames:
+            if name in ary[11]:
+                retVal=True
+        if ('R' not in ary[7]) and ('S' not in ary[7]) and  ('D' not in ary[7]):
+            retVal=False
+
+        return retVal
+
 #-------------------------
     def fill_element(self, ary):
-        if self.username in ary[1] and self.procname in ary[11]:
-            if ('R' not in ary[7]) and ('S' not in ary[7]) and  ('D' not in ary[7]):
-                return
+#        if self.username in ary[1] and self.procname in ary[11]:
+#            if ('R' not in ary[7]) and ('S' not in ary[7]) and  ('D' not in ary[7]):
+#                return
+        if self.check_element(ary):
             cpu =float(ary[8])
             for val in self.avals:
                 if cpu >= val:
@@ -171,7 +185,7 @@ def main():
     p = argparse.ArgumentParser(description=desc, epilog="None")
     p.add_argument("-n",dest="nfinal",default=NFINAL,help="number of loops")
     p.add_argument("-u",dest="username",default=UNAME,help="select user name")
-    p.add_argument("-p",dest="procname",default=PNAME,help="select process name")
+    p.add_argument("-p",dest="procnames",default=PNAMES,help="select colon separated list of process names like aliroot:root.exe")
 
     p.add_argument("--time-to-notify",dest="time_to_notify",default=TIME_TO_NOTIFY,help="how frequent to email notice")
     p.add_argument("-v", "--verbose", action="count", dest="verbosity", default=0,help="be verbose about actions, repeatable")
